@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech-to-Text System</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #4a90e2;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        label {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4a90e2;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 12px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #357ab8;
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #transcription {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #555;
+            word-wrap: break-word;
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            min-height: 50px;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Speech-to-Text System</h1>
+    <div class="container">
+        <label for="language">Select Language:</label>
+        <select id="language">
+            <option value="en-US">English (US)</option>
+            <option value="es-ES">Spanish (Spain)</option>
+            <option value="fr-FR">French (France)</option>
+            <option value="de-DE">German (Germany)</option>
+            <option value="hi-IN">Hindi (India)</option>
+            <option value="zh-CN">Chinese (Mandarin)</option>
+        </select>
+        <button id="micButton">🎤 Start Listening</button>
+        <div id="transcription">Your transcription will appear here...</div>
+    </div>
+    <footer>
+        &copy; 2025 Speech-to-Text System. All rights reserved.
+    </footer>
+
+    <script>
+        const micButton = document.getElementById('micButton');
+        const transcriptionDiv = document.getElementById('transcription');
+        const languageSelect = document.getElementById('language');
+        let isListening = false;
+
+        micButton.addEventListener('click', () => {
+            if (!isListening) {
+                micButton.textContent = '🎤 Stop Listening';
+                transcriptionDiv.textContent = 'Listening for speech...';
+                isListening = true;
+
+                const selectedLanguage = languageSelect.value;
+
+                fetch('/start-listening', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ language: selectedLanguage })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Temporarily display "Audio captured successfully!"
+                            transcriptionDiv.textContent = 'Audio captured successfully!';
+                            setTimeout(() => {
+                                // Replace with the transcription after a short delay
+                                transcriptionDiv.textContent = `Transcription: ${data.transcription}`;
+                            }, 1000); // 1-second delay
+                        } else {
+                            transcriptionDiv.textContent = `Error: ${data.error}`;
+                        }
+                        micButton.textContent = '🎤 Start Listening';
+                        isListening = false;
+                    })
+                    .catch(error => {
+                        transcriptionDiv.textContent = `Error: ${error}`;
+                        micButton.textContent = '🎤 Start Listening';
+                        isListening = false;
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
