@@ -1,4 +1,5 @@
 Flask
 SpeechRecognition
 nltk
-PyAudio
+PyAudio==0.2.13
+--only-binary=PyAudio
