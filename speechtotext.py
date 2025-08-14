@@ -1,9 +1,6 @@
 import speech_recognition as sr
 import nltk
 from nltk.tokenize import word_tokenize
-import sounddevice as sd
-import soundfile as sf
-import os
 
 # Download required NLTK data
 nltk.download('punkt')
@@ -13,31 +10,26 @@ def initialize_recognizer():
     """Initialize the speech recognizer."""
     return sr.Recognizer()
 
-def capture_audio(recognizer, samplerate=16000, duration=10):
-    """Capture live audio using sounddevice."""
+def capture_audio(recognizer, timeout=5, phrase_time_limit=15):
+    """Capture live audio from the microphone."""
     try:
-        print("\nStarting recording... Speak now!")
-        audio = sd.rec(int(duration * samplerate),
-                       samplerate=samplerate,
-                       channels=1,
-                       dtype='float32')
-        sd.wait()  # Wait until recording is finished
-        
-        # Save to temporary file
-        temp_file = "temp_recording.wav"
-        sf.write(temp_file, audio, samplerate)
-        
-        # Load with SpeechRecognition
-        with sr.AudioFile(temp_file) as source:
-            print("Processing audio...")
-            audio_data = recognizer.record(source)
-        
-        # Clean up
-        os.remove(temp_file)
-        return audio_data
-        
+        with sr.Microphone() as source:
+            print("\nAdjusting for ambient noise... Please wait.")
+            print("Microphone source initialized.")
+            recognizer.adjust_for_ambient_noise(source, duration=2)
+            print("Ambient noise adjusted.")
+            print("Listening for speech...")
+            audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_time_limit)
+            print("Audio captured successfully!")
+            return audio
+    except sr.WaitTimeoutError:
+        print("No speech detected within the timeout period. Retrying...")
+        return None
+    except sr.RequestError as e:
+        print(f"Microphone access error: {e}. Please check your microphone.")
+        return None
     except Exception as e:
-        print(f"Error capturing audio: {e}")
+        print(f"Error capturing audio: {e}. Retrying...")
         return None
 
 def speech_to_text(recognizer, audio):
@@ -49,10 +41,10 @@ def speech_to_text(recognizer, audio):
         print("\nTranscription:", text)
         return text
     except sr.UnknownValueError:
-        print("Could not understand the audio.")
+        print("Could not understand the audio. Please try again.")
         return None
     except sr.RequestError as e:
-        print(f"Could not request results: {e}")
+        print(f"Could not request results from Google Speech Recognition: {e}")
         return None
 
 def apply_pos_tagging(text):
@@ -71,6 +63,10 @@ def format_pos_output(pos_tags):
     """Format the POS tagged output for readability."""
     if pos_tags is None:
         return "No POS tags available."
+    formatted_output = "\nPOS Tagging Results:\n"
+    formatted_output += "-" * 50 + "\n"
+    formatted_output += f"{'Word':<20} {'POS Tag':<10} {'Description'}\n"
+    formatted_output += "-" * 50 + "\n"
     
     tag_descriptions = {
         'NN': 'Noun, singular',
@@ -89,15 +85,9 @@ def format_pos_output(pos_tags):
         'CC': 'Coordinating conjunction'
     }
     
-    formatted_output = "\nPOS Tagging Results:\n"
-    formatted_output += "-" * 50 + "\n"
-    formatted_output += f"{'Word':<20} {'POS Tag':<10} {'Description'}\n"
-    formatted_output += "-" * 50 + "\n"
-    
     for word, tag in pos_tags:
         description = tag_descriptions.get(tag, 'Other')
         formatted_output += f"{word:<20} {tag:<10} {description}\n"
-    
     return formatted_output
 
 def main():
@@ -115,13 +105,13 @@ def main():
         
         text = speech_to_text(recognizer, audio)
         
-        if text and text.lower().strip() == 'exit':
+        if text and text.lower() == 'exit':
             print("Exiting program.")
             break
             
         pos_tags = apply_pos_tagging(text)
-        if pos_tags:
-            print(format_pos_output(pos_tags))
+        formatted_output = format_pos_output(pos_tags)
+        print(formatted_output)
 
 if __name__ == "__main__":
     main()
